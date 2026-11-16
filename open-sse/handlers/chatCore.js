@@ -74,7 +74,7 @@ export function pickForwardableClientHeaders(headers) {
   return picked;
 }
 
-export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled = false, headroomUrl, headroomCompressUserMessages = false, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, pxpipeEnabled = false, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform = null, onPxpipeEvent = null, sourceFormatOverride, providerThinking, settings = null }) {
+export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, headroomEnabled = false, headroomUrl, headroomCompressUserMessages = false, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, pxpipeEnabled = false, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform = null, onPxpipeEvent = null, sourceFormatOverride, providerThinking, fetchConnectTimeoutMs, settings = null }) {
   const { provider, model } = modelInfo;
   const requestStartTime = Date.now();
 
@@ -495,7 +495,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   }
 
   try {
-    const result = await executor.execute({ model, body: translatedBody, clientBody: body, stream, credentials: requestCredentials, clientTool, signal: streamController.signal, log, proxyOptions });
+    const result = await executor.execute({ model, body: translatedBody, clientBody: body, stream, credentials: requestCredentials, clientTool, signal: streamController.signal, log, proxyOptions, fetchConnectTimeoutMs });
     providerResponse = result.response;
     providerUrl = result.url;
     providerHeaders = result.headers;
@@ -550,7 +550,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
           try { await onCredentialsRefreshed(newCredentials); } catch (e) { log?.warn?.("TOKEN", `onCredentialsRefreshed failed: ${e.message}`); }
         }
         try {
-          const retryResult = await executor.execute({ model, body: translatedBody, clientBody: body, stream, credentials: updatedCredentials, clientTool, signal: streamController.signal, log, proxyOptions });
+          const retryResult = await executor.execute({ model, body: translatedBody, clientBody: body, stream, credentials: updatedCredentials, clientTool, signal: streamController.signal, log, proxyOptions, fetchConnectTimeoutMs });
           // Always adopt the retry result — even on non-ok. The retry's error is
           // the real reason the user's request failed; the original 401 body is
           // stale and was only ever a refresh trigger. Downstream parseUpstreamError

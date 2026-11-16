@@ -10,6 +10,14 @@ import TrafficStrip from "./components/TrafficStrip";
 import QuickConnect from "./components/QuickConnect";
 import EmptyState from "@/shared/components/EmptyState";
 
+// Upstream connect-timeout input bounds in seconds (10–600, default 60). Must
+// match FETCH_CONNECT_TIMEOUT_*_MS in open-sse/config/runtimeConfig.js, which
+// is server-only and cannot be imported into this client bundle.
+const FETCH_TIMEOUT_MIN_SEC = 10;
+const FETCH_TIMEOUT_MAX_SEC = 600;
+const FETCH_TIMEOUT_DEFAULT_SEC = 60;
+
+
 // Locales that unlock wenyan (classical Chinese) caveman levels
 const WENYAN_LOCALES = ["zh-CN", "zh-TW"];
 
@@ -85,6 +93,8 @@ export default function APIPageClient({ machineId }) {
   const [tunnelDashboardAccess, setTunnelDashboardAccess] = useState(false);
   const [rtkEnabled, setRtkEnabledState] = useState(true);
   const [responseCacheEnabled, setResponseCacheEnabled] = useState(false);
+  const [fetchTimeoutSec, setFetchTimeoutSec] = useState(60);
+  const savedFetchTimeoutRef = useRef(FETCH_TIMEOUT_DEFAULT_SEC * 1000);
   const [cacheStats, setCacheStats] = useState(null);
   const [cavemanEnabled, setCavemanEnabled] = useState(false);
   const [cavemanLevel, setCavemanLevel] = useState("full");
@@ -288,6 +298,9 @@ export default function APIPageClient({ machineId }) {
         setTunnelDashboardAccess(data.tunnelDashboardAccess || false);
         setRtkEnabledState(data.rtkEnabled !== false);
         setResponseCacheEnabled(!!data.responseCacheEnabled);
+        const savedFetchTimeoutMs = data.fetchConnectTimeoutMs ?? FETCH_TIMEOUT_DEFAULT_SEC * 1000;
+        savedFetchTimeoutRef.current = savedFetchTimeoutMs;
+        setFetchTimeoutSec(Math.round(savedFetchTimeoutMs / 1000));
         setCavemanEnabled(!!data.cavemanEnabled);
         setCavemanLevel(data.cavemanLevel || "full");
         setPonytailEnabled(!!data.ponytailEnabled);
@@ -365,6 +378,25 @@ export default function APIPageClient({ machineId }) {
     } catch (error) {
       console.log("Error updating responseCacheEnabled:", error);
     }
+  };
+
+  // Connect-timeout knob: type freely in seconds, commit clamped (10–600) on
+  // blur/Enter so half-typed values never reach the API.
+  const commitFetchTimeout = () => {
+    const sec = Math.min(
+      Math.max(
+        Number.isFinite(fetchTimeoutSec)
+          ? Math.trunc(fetchTimeoutSec)
+          : Math.round(savedFetchTimeoutRef.current / 1000),
+        FETCH_TIMEOUT_MIN_SEC,
+      ),
+      FETCH_TIMEOUT_MAX_SEC,
+    );
+    setFetchTimeoutSec(sec);
+    const ms = sec * 1000;
+    if (ms === savedFetchTimeoutRef.current) return;
+    savedFetchTimeoutRef.current = ms;
+    patchSetting({ fetchConnectTimeoutMs: ms });
   };
 
   // Poll cache stats every 10s while the panel is enabled — surfaces live hit count
@@ -1356,6 +1388,44 @@ export default function APIPageClient({ machineId }) {
             </div>
           </div>
         )}
+      </Card>
+
+      {/* Upstream connect timeout — global default for providers without their own timeoutMs */}
+      <Card id="connect-timeout">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <h2 className="section-title flex items-center gap-2">
+              <Icon name="schedule" size={24} className="text-primary" />
+              Upstream Timeout
+            </h2>
+            <p className="text-sm text-text-muted mt-1">
+              Seconds kRouter waits for a provider to return response headers before
+              aborting the attempt ({FETCH_TIMEOUT_MIN_SEC}–
+              {FETCH_TIMEOUT_MAX_SEC}s, default
+              {FETCH_TIMEOUT_DEFAULT_SEC}). Providers with their own
+              timeout keep it.
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+              Timed-out requests retry up to 3 times, so a fully dead provider can take
+              up to ~4× this long to surface an error.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Input
+              type="number"
+              min={FETCH_TIMEOUT_MIN_SEC}
+              max={FETCH_TIMEOUT_MAX_SEC}
+              value={Number.isFinite(fetchTimeoutSec) ? fetchTimeoutSec : ""}
+              onChange={(e) => setFetchTimeoutSec(e.target.valueAsNumber)}
+              onBlur={commitFetchTimeout}
+              onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+              aria-label="Upstream connect timeout in seconds"
+              className="w-24"
+              inputClassName="text-center"
+            />
+            <span className="text-sm text-text-muted">sec</span>
+          </div>
+        </div>
       </Card>
 
       {/* API Keys */}

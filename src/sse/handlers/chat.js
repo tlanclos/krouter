@@ -408,6 +408,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       pxpipeEnabled: !!settings.pxpipeEnabled,
       pxpipeMinChars: settings.pxpipeMinChars,
       pxpipeTimeoutMs: settings.pxpipeTimeoutMs,
+      fetchConnectTimeoutMs: settings.fetchConnectTimeoutMs,
       // Lazily warms the in-process module on first use; null when not installed (fail-open).
       pxpipeTransform: await resolvePxpipeTransform(settings),
       onPxpipeEvent: appendPxpipeEvent,
@@ -504,6 +505,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
             pxpipeEnabled: !!settings.pxpipeEnabled,
             pxpipeMinChars: settings.pxpipeMinChars,
             pxpipeTimeoutMs: settings.pxpipeTimeoutMs,
+            fetchConnectTimeoutMs: settings.fetchConnectTimeoutMs,
             pxpipeTransform: await resolvePxpipeTransform(settings),
             onPxpipeEvent: appendPxpipeEvent,
             providerThinking: (settings.providerThinking || {})[fb.provider] || null,

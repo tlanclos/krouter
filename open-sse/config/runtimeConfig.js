@@ -50,8 +50,30 @@ export const STREAM_FIRST_CHUNK_TIMEOUT_MS = (() => {
 // the provider only ever hit the hardcoded localhost:8888 default.
 export const SEARXNG_URL = (process.env.SEARXNG_URL || "http://localhost:8888/search").trim();
 
-// Fetch connect timeout: abort if upstream doesn't return response headers within this duration
-export const FETCH_CONNECT_TIMEOUT_MS = 60 * 1000;
+// Fetch connect timeout: abort if upstream doesn't return response headers
+// within this duration. The Endpoint page knob (settings.fetchConnectTimeoutMs)
+// is read per request and passed down to the provider call, like every other
+// setting; the settings repo (src/lib/db/repos/settingsRepo.js) owns the saved
+// value and clamps it into this range on read.
+export const FETCH_CONNECT_TIMEOUT_DEFAULT_MS = 60 * 1000;
+export const FETCH_CONNECT_TIMEOUT_MIN_MS = 10 * 1000;
+export const FETCH_CONNECT_TIMEOUT_MAX_MS = 600 * 1000;
+
+/**
+ * The connect timeout to use for a provider request, in milliseconds.
+ *
+ * `savedMs` is settings.fetchConnectTimeoutMs as read for this request. A
+ * missing or unusable value falls back to the default, so a request that
+ * predates the setting still works; a saved value is clamped into the range
+ * the Endpoint page enforces. A provider that sets its own timeoutMs overrides
+ * this at the call site.
+ */
+export function resolveFetchConnectTimeoutMs(savedMs) {
+  if (typeof savedMs !== "number" || !Number.isFinite(savedMs)) {
+    return FETCH_CONNECT_TIMEOUT_DEFAULT_MS;
+  }
+  return Math.min(Math.max(savedMs, FETCH_CONNECT_TIMEOUT_MIN_MS), FETCH_CONNECT_TIMEOUT_MAX_MS);
+}
 
 // Default token limits
 export const DEFAULT_MAX_TOKENS = 64000;
