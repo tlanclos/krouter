@@ -53,10 +53,15 @@ export const SEARXNG_URL = (process.env.SEARXNG_URL || "http://localhost:8888/se
 // Fetch connect timeout: abort if upstream doesn't return response headers
 // within this duration. The Endpoint page knob (settings.fetchConnectTimeoutMs)
 // writes env FETCH_CONNECT_TIMEOUT_MS, which the getter below reads at request
-// time; these constants are the default and the bounds it accepts.
-export const FETCH_CONNECT_TIMEOUT_DEFAULT_MS = 60 * 1000;
-export const FETCH_CONNECT_TIMEOUT_MIN_MS = 10 * 1000;
-export const FETCH_CONNECT_TIMEOUT_MAX_MS = 600 * 1000;
+// time; the default and the bounds it accepts come from the shared constants
+// module (client-safe, no process.env).
+import {
+  FETCH_CONNECT_TIMEOUT_DEFAULT_MS,
+  FETCH_CONNECT_TIMEOUT_MIN_MS,
+  FETCH_CONNECT_TIMEOUT_MAX_MS,
+} from "../../src/shared/constants/fetchConnectTimeout.js";
+
+export { FETCH_CONNECT_TIMEOUT_DEFAULT_MS, FETCH_CONNECT_TIMEOUT_MIN_MS, FETCH_CONNECT_TIMEOUT_MAX_MS };
 
 /**
  * Clamp a connect timeout into the supported range. Shared by the env getter

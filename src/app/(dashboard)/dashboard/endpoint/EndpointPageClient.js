@@ -9,6 +9,11 @@ import Icon from "../../../../shared/components/icons/Icon";
 import TrafficStrip from "./components/TrafficStrip";
 import QuickConnect from "./components/QuickConnect";
 import EmptyState from "@/shared/components/EmptyState";
+import {
+  FETCH_CONNECT_TIMEOUT_DEFAULT_MS,
+  FETCH_CONNECT_TIMEOUT_MIN_MS,
+  FETCH_CONNECT_TIMEOUT_MAX_MS,
+} from "@/shared/constants/fetchConnectTimeout.js";
 
 // Locales that unlock wenyan (classical Chinese) caveman levels
 const WENYAN_LOCALES = ["zh-CN", "zh-TW"];
@@ -86,7 +91,7 @@ export default function APIPageClient({ machineId }) {
   const [rtkEnabled, setRtkEnabledState] = useState(true);
   const [responseCacheEnabled, setResponseCacheEnabled] = useState(false);
   const [fetchTimeoutSec, setFetchTimeoutSec] = useState(60);
-  const savedFetchTimeoutRef = useRef(60000);
+  const savedFetchTimeoutRef = useRef(FETCH_CONNECT_TIMEOUT_DEFAULT_MS);
   const [cacheStats, setCacheStats] = useState(null);
   const [cavemanEnabled, setCavemanEnabled] = useState(false);
   const [cavemanLevel, setCavemanLevel] = useState("full");
@@ -290,7 +295,7 @@ export default function APIPageClient({ machineId }) {
         setTunnelDashboardAccess(data.tunnelDashboardAccess || false);
         setRtkEnabledState(data.rtkEnabled !== false);
         setResponseCacheEnabled(!!data.responseCacheEnabled);
-        const savedFetchTimeoutMs = data.fetchConnectTimeoutMs ?? 60000;
+        const savedFetchTimeoutMs = data.fetchConnectTimeoutMs ?? FETCH_CONNECT_TIMEOUT_DEFAULT_MS;
         savedFetchTimeoutRef.current = savedFetchTimeoutMs;
         setFetchTimeoutSec(Math.round(savedFetchTimeoutMs / 1000));
         setCavemanEnabled(!!data.cavemanEnabled);
@@ -380,9 +385,9 @@ export default function APIPageClient({ machineId }) {
         Number.isFinite(fetchTimeoutSec)
           ? Math.trunc(fetchTimeoutSec)
           : Math.round(savedFetchTimeoutRef.current / 1000),
-        10,
+        FETCH_CONNECT_TIMEOUT_MIN_MS / 1000,
       ),
-      600,
+      FETCH_CONNECT_TIMEOUT_MAX_MS / 1000,
     );
     setFetchTimeoutSec(sec);
     const ms = sec * 1000;
@@ -1392,7 +1397,9 @@ export default function APIPageClient({ machineId }) {
             </h2>
             <p className="text-sm text-text-muted mt-1">
               Seconds kRouter waits for a provider to return response headers before
-              aborting the attempt (10–600s, default 60). Providers with their own
+              aborting the attempt ({FETCH_CONNECT_TIMEOUT_MIN_MS / 1000}–
+              {FETCH_CONNECT_TIMEOUT_MAX_MS / 1000}s, default
+              {FETCH_CONNECT_TIMEOUT_DEFAULT_MS / 1000}). Providers with their own
               timeout keep it.
             </p>
             <p className="text-xs text-text-muted mt-1">
@@ -1403,8 +1410,8 @@ export default function APIPageClient({ machineId }) {
           <div className="flex items-center gap-2 shrink-0">
             <Input
               type="number"
-              min={10}
-              max={600}
+              min={FETCH_CONNECT_TIMEOUT_MIN_MS / 1000}
+              max={FETCH_CONNECT_TIMEOUT_MAX_MS / 1000}
               value={Number.isFinite(fetchTimeoutSec) ? fetchTimeoutSec : ""}
               onChange={(e) => setFetchTimeoutSec(e.target.valueAsNumber)}
               onBlur={commitFetchTimeout}
