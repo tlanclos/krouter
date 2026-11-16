@@ -138,7 +138,8 @@ export async function handleEmbeddings(request) {
       },
       onRequestSuccess: async () => {
         await clearAccountError(credentials.connectionId, credentials, model);
-      }
+      },
+      fetchConnectTimeoutMs: settings.fetchConnectTimeoutMs,
     });
 
     if (result.success) {

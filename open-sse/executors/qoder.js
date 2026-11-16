@@ -28,7 +28,7 @@ import { createHash } from "crypto";
 import { BaseExecutor } from "./base.js";
 import { PROVIDERS } from "../config/providers.js";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
-import { getFetchConnectTimeoutMs, HTTP_STATUS } from "../config/runtimeConfig.js";
+import { resolveFetchConnectTimeoutMs, HTTP_STATUS } from "../config/runtimeConfig.js";
 import {
   QODER_CHAT_URL_ENCODED,
   QODER_MODEL_MAP,
@@ -618,7 +618,7 @@ export class QoderExecutor extends BaseExecutor {
     };
 
     // Abort if upstream doesn't return response headers within connect timeout.
-    const timeoutMs = this.config?.timeoutMs || getFetchConnectTimeoutMs();
+    const timeoutMs = this.config?.timeoutMs || resolveFetchConnectTimeoutMs(fetchConnectTimeoutMs);
     const connectCtrl = new AbortController();
     const connectTimer = setTimeout(() => connectCtrl.abort(new Error("fetch connect timeout")), timeoutMs);
     const mergedSignal = signal ? AbortSignal.any([signal, connectCtrl.signal]) : connectCtrl.signal;

@@ -1,16 +1,12 @@
 // Upstream connect timeout: the global default for providers that do not set
 // their own timeoutMs.
 //
-// The value lives in the settings DB (settings.fetchConnectTimeoutMs, the
-// Endpoint page knob) and is mirrored into this in-process store whenever it
-// changes, so the open-sse executors can read it synchronously at request
-// time without a DB read on every provider call.
-//
-// The store hangs off globalThis because Next.js loads each route bundle with
-// its own module registry: a plain module-level variable would be per-bundle
-// and the settings route's copy would not be visible to the chat route's
-// executors. globalThis is shared by every bundle in the process, which is the
-// same trick open-sse/services/routingLog.js uses for its ring buffer.
+// The value is a dashboard setting (settings.fetchConnectTimeoutMs). Like every
+// other setting it travels the same route: the UI PATCHes /api/settings, the
+// route validates and stores it in the settings DB, and each request reads it
+// with getSettings() and passes it down to the provider call. This module holds
+// only the default and the accepted range, plus the resolver the executors
+// use.
 
 /** Default connect timeout in milliseconds. */
 export const FETCH_CONNECT_TIMEOUT_DEFAULT_MS = 60 * 1000;
@@ -21,10 +17,6 @@ export const FETCH_CONNECT_TIMEOUT_MIN_MS = 10 * 1000;
 /** Largest connect timeout the knob accepts, in milliseconds. */
 export const FETCH_CONNECT_TIMEOUT_MAX_MS = 600 * 1000;
 
-const store = (globalThis.__krouterFetchConnectTimeout ??= {
-  timeoutMs: FETCH_CONNECT_TIMEOUT_DEFAULT_MS,
-});
-
 /**
  * Clamp a connect timeout into the supported range.
  */
@@ -33,19 +25,16 @@ export function clampFetchConnectTimeoutMs(ms) {
 }
 
 /**
- * The connect timeout to use for the next provider request, in milliseconds.
- * Falls back to the default until a saved setting is applied.
+ * The connect timeout to use for a provider request, in milliseconds.
+ *
+ * `savedMs` is settings.fetchConnectTimeoutMs as read for this request. A
+ * missing or unusable value falls back to the default, so a request that
+ * predates the setting (or an imported settings row without it) still works.
+ * A provider that sets its own timeoutMs overrides this at the call site.
  */
-export function getFetchConnectTimeoutMs() {
-  return store.timeoutMs;
-}
-
-/**
- * Apply a saved connect timeout. A missing or non-number value is a no-op, so
- * an existing value is never cleared by a settings read that does not mention
- * the knob.
- */
-export function setFetchConnectTimeoutMs(ms) {
-  if (typeof ms !== "number" || !Number.isFinite(ms)) return;
-  store.timeoutMs = clampFetchConnectTimeoutMs(ms);
+export function resolveFetchConnectTimeoutMs(savedMs) {
+  if (typeof savedMs !== "number" || !Number.isFinite(savedMs)) {
+    return FETCH_CONNECT_TIMEOUT_DEFAULT_MS;
+  }
+  return clampFetchConnectTimeoutMs(savedMs);
 }

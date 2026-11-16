@@ -52,15 +52,14 @@ export const SEARXNG_URL = (process.env.SEARXNG_URL || "http://localhost:8888/se
 
 // Fetch connect timeout: abort if upstream doesn't return response headers
 // within this duration. The Endpoint page knob (settings.fetchConnectTimeoutMs)
-// is mirrored into the shared in-process store, which the getter below reads at
-// request time.
+// is read per request and passed down to the provider call, like every other
+// setting.
 import {
   FETCH_CONNECT_TIMEOUT_DEFAULT_MS,
   FETCH_CONNECT_TIMEOUT_MIN_MS,
   FETCH_CONNECT_TIMEOUT_MAX_MS,
   clampFetchConnectTimeoutMs,
-  getFetchConnectTimeoutMs,
-  setFetchConnectTimeoutMs,
+  resolveFetchConnectTimeoutMs,
 } from "../../src/shared/constants/fetchConnectTimeout.js";
 
 export {
@@ -68,8 +67,7 @@ export {
   FETCH_CONNECT_TIMEOUT_MIN_MS,
   FETCH_CONNECT_TIMEOUT_MAX_MS,
   clampFetchConnectTimeoutMs,
-  getFetchConnectTimeoutMs,
-  setFetchConnectTimeoutMs,
+  resolveFetchConnectTimeoutMs,
 };
 
 // Default token limits
