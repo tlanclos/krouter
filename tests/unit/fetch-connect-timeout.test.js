@@ -19,6 +19,8 @@ const { PATCH } = await import("../../src/app/api/settings/route.js");
 const { applyFetchTimeoutEnv } = await import("../../src/lib/fetchTimeoutEnv.js");
 const {
   getFetchConnectTimeoutMs,
+  clampFetchConnectTimeoutMs,
+  FETCH_CONNECT_TIMEOUT_DEFAULT_MS,
   FETCH_CONNECT_TIMEOUT_MIN_MS,
   FETCH_CONNECT_TIMEOUT_MAX_MS,
 } = await import("../../open-sse/config/runtimeConfig.js");
@@ -35,7 +37,7 @@ const restoreEnv = () => {
 describe("getFetchConnectTimeoutMs", () => {
   afterEach(restoreEnv);
 
-  it("falls back to 60000 when env is unset or junk", () => {
+  it("falls back to the default when env is unset or junk", () => {
     // Arrange
     delete process.env.FETCH_CONNECT_TIMEOUT_MS;
 
@@ -43,7 +45,7 @@ describe("getFetchConnectTimeoutMs", () => {
     const withEnvUnset = getFetchConnectTimeoutMs();
 
     // Assert
-    expect(withEnvUnset).toBe(60000);
+    expect(withEnvUnset).toBe(FETCH_CONNECT_TIMEOUT_DEFAULT_MS);
 
     // Arrange
     process.env.FETCH_CONNECT_TIMEOUT_MS = "soon";
@@ -52,7 +54,7 @@ describe("getFetchConnectTimeoutMs", () => {
     const withJunkEnv = getFetchConnectTimeoutMs();
 
     // Assert
-    expect(withJunkEnv).toBe(60000);
+    expect(withJunkEnv).toBe(FETCH_CONNECT_TIMEOUT_DEFAULT_MS);
   });
 
   it("honors an env value inside the bounds", () => {
@@ -155,6 +157,41 @@ describe("PATCH /api/settings fetchConnectTimeoutMs", () => {
     expect(res.status).toBe(200);
     expect(mocks.updateSettings.mock.calls[0][0]).not.toHaveProperty("fetchConnectTimeoutMs");
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBeUndefined();
+  });
+});
+
+describe("clampFetchConnectTimeoutMs", () => {
+  it("leaves a value inside the bounds untouched", () => {
+    // Arrange
+    const ms = 180000;
+
+    // Act
+    const clamped = clampFetchConnectTimeoutMs(ms);
+
+    // Assert
+    expect(clamped).toBe(180000);
+  });
+
+  it("clamps a value below the floor up to it", () => {
+    // Arrange
+    const ms = 5000;
+
+    // Act
+    const clamped = clampFetchConnectTimeoutMs(ms);
+
+    // Assert
+    expect(clamped).toBe(FETCH_CONNECT_TIMEOUT_MIN_MS);
+  });
+
+  it("clamps a value above the ceiling down to it", () => {
+    // Arrange
+    const ms = 9999999;
+
+    // Act
+    const clamped = clampFetchConnectTimeoutMs(ms);
+
+    // Assert
+    expect(clamped).toBe(FETCH_CONNECT_TIMEOUT_MAX_MS);
   });
 });
 

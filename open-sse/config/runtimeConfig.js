@@ -50,14 +50,22 @@ export const STREAM_FIRST_CHUNK_TIMEOUT_MS = (() => {
 // the provider only ever hit the hardcoded localhost:8888 default.
 export const SEARXNG_URL = (process.env.SEARXNG_URL || "http://localhost:8888/search").trim();
 
-// Fetch connect timeout: abort if upstream doesn't return response headers within this duration
-export const FETCH_CONNECT_TIMEOUT_MS = 60 * 1000;
-
-// Bounds for the dashboard's global connect-timeout knob (Endpoint page →
-// settings.fetchConnectTimeoutMs → env FETCH_CONNECT_TIMEOUT_MS). One source of
-// truth for both the API boundary check and the env fallback below.
+// Fetch connect timeout: abort if upstream doesn't return response headers
+// within this duration. The Endpoint page knob (settings.fetchConnectTimeoutMs)
+// writes env FETCH_CONNECT_TIMEOUT_MS, which the getter below reads at request
+// time; these constants are the default and the bounds it accepts.
+export const FETCH_CONNECT_TIMEOUT_DEFAULT_MS = 60 * 1000;
 export const FETCH_CONNECT_TIMEOUT_MIN_MS = 10 * 1000;
 export const FETCH_CONNECT_TIMEOUT_MAX_MS = 600 * 1000;
+
+/**
+ * Clamp a connect timeout into the supported range. Shared by the env getter
+ * below and the settings writer (src/lib/fetchTimeoutEnv.js) so the two can
+ * never disagree about which values are valid.
+ */
+export function clampFetchConnectTimeoutMs(ms) {
+  return Math.min(Math.max(ms, FETCH_CONNECT_TIMEOUT_MIN_MS), FETCH_CONNECT_TIMEOUT_MAX_MS);
+}
 
 /**
  * Resolve the connect timeout for the current request. Reads env at call time so
@@ -68,8 +76,8 @@ export const FETCH_CONNECT_TIMEOUT_MAX_MS = 600 * 1000;
  */
 export function getFetchConnectTimeoutMs() {
   const raw = parseInt(process.env.FETCH_CONNECT_TIMEOUT_MS ?? "", 10);
-  if (!Number.isFinite(raw)) return FETCH_CONNECT_TIMEOUT_MS;
-  return Math.min(Math.max(raw, FETCH_CONNECT_TIMEOUT_MIN_MS), FETCH_CONNECT_TIMEOUT_MAX_MS);
+  if (!Number.isFinite(raw)) return FETCH_CONNECT_TIMEOUT_DEFAULT_MS;
+  return clampFetchConnectTimeoutMs(raw);
 }
 
 // Default token limits

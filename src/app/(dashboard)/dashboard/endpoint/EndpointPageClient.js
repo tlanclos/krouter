@@ -290,7 +290,7 @@ export default function APIPageClient({ machineId }) {
         setTunnelDashboardAccess(data.tunnelDashboardAccess || false);
         setRtkEnabledState(data.rtkEnabled !== false);
         setResponseCacheEnabled(!!data.responseCacheEnabled);
-        const savedFetchTimeoutMs = Number(data.fetchConnectTimeoutMs) || 60000;
+        const savedFetchTimeoutMs = data.fetchConnectTimeoutMs ?? 60000;
         savedFetchTimeoutRef.current = savedFetchTimeoutMs;
         setFetchTimeoutSec(Math.round(savedFetchTimeoutMs / 1000));
         setCavemanEnabled(!!data.cavemanEnabled);
@@ -375,10 +375,15 @@ export default function APIPageClient({ machineId }) {
   // Connect-timeout knob: type freely in seconds, commit clamped (10–600) on
   // blur/Enter so half-typed values never reach the API.
   const commitFetchTimeout = () => {
-    let sec = Number.isFinite(fetchTimeoutSec)
-      ? Math.trunc(fetchTimeoutSec)
-      : Math.round(savedFetchTimeoutRef.current / 1000);
-    sec = Math.min(Math.max(sec, 10), 600);
+    const sec = Math.min(
+      Math.max(
+        Number.isFinite(fetchTimeoutSec)
+          ? Math.trunc(fetchTimeoutSec)
+          : Math.round(savedFetchTimeoutRef.current / 1000),
+        10,
+      ),
+      600,
+    );
     setFetchTimeoutSec(sec);
     const ms = sec * 1000;
     if (ms === savedFetchTimeoutRef.current) return;

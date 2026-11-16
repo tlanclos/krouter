@@ -58,7 +58,7 @@ export async function PATCH(request) {
 
     // Upstream connect-timeout knob (Endpoint page). Boundary check: the value
     // is written to env and read on every request, so reject rather than clamp.
-    if (Object.prototype.hasOwnProperty.call(body, "fetchConnectTimeoutMs")) {
+    if ("fetchConnectTimeoutMs" in body) {
       const ms = Number(body.fetchConnectTimeoutMs);
       if (!Number.isInteger(ms) || ms < FETCH_CONNECT_TIMEOUT_MIN_MS || ms > FETCH_CONNECT_TIMEOUT_MAX_MS) {
         return NextResponse.json(
@@ -118,7 +118,7 @@ export async function PATCH(request) {
 
     // Apply the connect-timeout knob immediately (no restart) — same reasoning
     // as the outbound-proxy block above.
-    if (Object.prototype.hasOwnProperty.call(body, "fetchConnectTimeoutMs")) {
+    if ("fetchConnectTimeoutMs" in body) {
       applyFetchTimeoutEnv(settings);
     }
 

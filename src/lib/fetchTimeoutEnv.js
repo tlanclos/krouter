@@ -1,7 +1,4 @@
-import {
-  FETCH_CONNECT_TIMEOUT_MIN_MS,
-  FETCH_CONNECT_TIMEOUT_MAX_MS,
-} from "open-sse/config/runtimeConfig.js";
+import { clampFetchConnectTimeoutMs } from "open-sse/config/runtimeConfig.js";
 
 /**
  * Set the upstream connect timeout for every provider request.
@@ -22,9 +19,5 @@ export function applyFetchTimeoutEnv(settings) {
   if (typeof process === "undefined" || !process.env) return;
   const raw = settings?.fetchConnectTimeoutMs;
   if (typeof raw !== "number" || !Number.isFinite(raw)) return;
-  const clamped = Math.min(
-    Math.max(Math.round(raw), FETCH_CONNECT_TIMEOUT_MIN_MS),
-    FETCH_CONNECT_TIMEOUT_MAX_MS,
-  );
-  process.env.FETCH_CONNECT_TIMEOUT_MS = String(clamped);
+  process.env.FETCH_CONNECT_TIMEOUT_MS = String(clampFetchConnectTimeoutMs(raw));
 }
