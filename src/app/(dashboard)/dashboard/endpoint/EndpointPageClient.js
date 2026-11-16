@@ -85,7 +85,7 @@ export default function APIPageClient({ machineId }) {
   const [tunnelDashboardAccess, setTunnelDashboardAccess] = useState(false);
   const [rtkEnabled, setRtkEnabledState] = useState(true);
   const [responseCacheEnabled, setResponseCacheEnabled] = useState(false);
-  const [fetchTimeoutSec, setFetchTimeoutSec] = useState("60");
+  const [fetchTimeoutSec, setFetchTimeoutSec] = useState(60);
   const savedFetchTimeoutRef = useRef(60000);
   const [cacheStats, setCacheStats] = useState(null);
   const [cavemanEnabled, setCavemanEnabled] = useState(false);
@@ -292,7 +292,7 @@ export default function APIPageClient({ machineId }) {
         setResponseCacheEnabled(!!data.responseCacheEnabled);
         const savedFetchTimeoutMs = Number(data.fetchConnectTimeoutMs) || 60000;
         savedFetchTimeoutRef.current = savedFetchTimeoutMs;
-        setFetchTimeoutSec(String(Math.round(savedFetchTimeoutMs / 1000)));
+        setFetchTimeoutSec(Math.round(savedFetchTimeoutMs / 1000));
         setCavemanEnabled(!!data.cavemanEnabled);
         setCavemanLevel(data.cavemanLevel || "full");
         setPonytailEnabled(!!data.ponytailEnabled);
@@ -375,10 +375,11 @@ export default function APIPageClient({ machineId }) {
   // Connect-timeout knob: type freely in seconds, commit clamped (10–600) on
   // blur/Enter so half-typed values never reach the API.
   const commitFetchTimeout = () => {
-    let sec = parseInt(String(fetchTimeoutSec), 10);
-    if (!Number.isFinite(sec)) sec = Math.round(savedFetchTimeoutRef.current / 1000);
+    let sec = Number.isFinite(fetchTimeoutSec)
+      ? Math.trunc(fetchTimeoutSec)
+      : Math.round(savedFetchTimeoutRef.current / 1000);
     sec = Math.min(Math.max(sec, 10), 600);
-    setFetchTimeoutSec(String(sec));
+    setFetchTimeoutSec(sec);
     const ms = sec * 1000;
     if (ms === savedFetchTimeoutRef.current) return;
     savedFetchTimeoutRef.current = ms;
@@ -1399,8 +1400,8 @@ export default function APIPageClient({ machineId }) {
               type="number"
               min={10}
               max={600}
-              value={fetchTimeoutSec}
-              onChange={(e) => setFetchTimeoutSec(e.target.value)}
+              value={Number.isFinite(fetchTimeoutSec) ? fetchTimeoutSec : ""}
+              onChange={(e) => setFetchTimeoutSec(e.target.valueAsNumber)}
               onBlur={commitFetchTimeout}
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
               aria-label="Upstream connect timeout in seconds"

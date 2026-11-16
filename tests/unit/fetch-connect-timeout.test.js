@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
  * The Endpoint page's upstream connect-timeout knob is stored as
- * settings.fetchConnectTimeoutMs and mirrored into env
+ * settings.fetchConnectTimeoutMs and written into env
  * FETCH_CONNECT_TIMEOUT_MS — open-sse executors read env at request time, so a
  * save must take effect without a restart. Bounds (10s–600s) are enforced at
  * the PATCH boundary and again in getFetchConnectTimeoutMs.
@@ -36,22 +36,54 @@ describe("getFetchConnectTimeoutMs", () => {
   afterEach(restoreEnv);
 
   it("falls back to 60000 when env is unset or junk", () => {
+    // Arrange
     delete process.env.FETCH_CONNECT_TIMEOUT_MS;
-    expect(getFetchConnectTimeoutMs()).toBe(60000);
+
+    // Act
+    const withEnvUnset = getFetchConnectTimeoutMs();
+
+    // Assert
+    expect(withEnvUnset).toBe(60000);
+
+    // Arrange
     process.env.FETCH_CONNECT_TIMEOUT_MS = "soon";
-    expect(getFetchConnectTimeoutMs()).toBe(60000);
+
+    // Act
+    const withJunkEnv = getFetchConnectTimeoutMs();
+
+    // Assert
+    expect(withJunkEnv).toBe(60000);
   });
 
   it("honors an env value inside the bounds", () => {
+    // Arrange
     process.env.FETCH_CONNECT_TIMEOUT_MS = "180000";
-    expect(getFetchConnectTimeoutMs()).toBe(180000);
+
+    // Act
+    const timeoutMs = getFetchConnectTimeoutMs();
+
+    // Assert
+    expect(timeoutMs).toBe(180000);
   });
 
   it("clamps env values into 10s..600s", () => {
+    // Arrange
     process.env.FETCH_CONNECT_TIMEOUT_MS = "5000";
-    expect(getFetchConnectTimeoutMs()).toBe(FETCH_CONNECT_TIMEOUT_MIN_MS);
+
+    // Act
+    const belowFloor = getFetchConnectTimeoutMs();
+
+    // Assert
+    expect(belowFloor).toBe(FETCH_CONNECT_TIMEOUT_MIN_MS);
+
+    // Arrange
     process.env.FETCH_CONNECT_TIMEOUT_MS = "9999999";
-    expect(getFetchConnectTimeoutMs()).toBe(FETCH_CONNECT_TIMEOUT_MAX_MS);
+
+    // Act
+    const aboveCeiling = getFetchConnectTimeoutMs();
+
+    // Assert
+    expect(aboveCeiling).toBe(FETCH_CONNECT_TIMEOUT_MAX_MS);
   });
 });
 
@@ -62,34 +94,64 @@ describe("PATCH /api/settings fetchConnectTimeoutMs", () => {
   });
   afterEach(restoreEnv);
 
-  it("stores a valid value and mirrors it into env", async () => {
-    const res = await patch({ fetchConnectTimeoutMs: 180000 });
+  it("stores a valid value and writes it into env", async () => {
+    // Arrange
+    const body = { fetchConnectTimeoutMs: 180000 };
+
+    // Act
+    const res = await patch(body);
+
+    // Assert
     expect(res.status).toBe(200);
     expect(mocks.updateSettings.mock.calls[0][0].fetchConnectTimeoutMs).toBe(180000);
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBe("180000");
   });
 
   it("rejects values below the floor with 400 and stores nothing", async () => {
-    const res = await patch({ fetchConnectTimeoutMs: 5000 });
+    // Arrange
+    const body = { fetchConnectTimeoutMs: 5000 };
+
+    // Act
+    const res = await patch(body);
+
+    // Assert
     expect(res.status).toBe(400);
     expect(mocks.updateSettings).not.toHaveBeenCalled();
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBeUndefined();
   });
 
   it("rejects values above the ceiling with 400", async () => {
-    const res = await patch({ fetchConnectTimeoutMs: 900000 });
+    // Arrange
+    const body = { fetchConnectTimeoutMs: 900000 };
+
+    // Act
+    const res = await patch(body);
+
+    // Assert
     expect(res.status).toBe(400);
     expect(mocks.updateSettings).not.toHaveBeenCalled();
   });
 
   it("rejects non-numeric input with 400", async () => {
-    const res = await patch({ fetchConnectTimeoutMs: "soon" });
+    // Arrange
+    const body = { fetchConnectTimeoutMs: "soon" };
+
+    // Act
+    const res = await patch(body);
+
+    // Assert
     expect(res.status).toBe(400);
     expect(mocks.updateSettings).not.toHaveBeenCalled();
   });
 
   it("leaves the setting alone when the request does not mention it", async () => {
-    const res = await patch({ requireLogin: true });
+    // Arrange
+    const body = { requireLogin: true };
+
+    // Act
+    const res = await patch(body);
+
+    // Assert
     expect(res.status).toBe(200);
     expect(mocks.updateSettings.mock.calls[0][0]).not.toHaveProperty("fetchConnectTimeoutMs");
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBeUndefined();
@@ -100,20 +162,51 @@ describe("applyFetchTimeoutEnv", () => {
   afterEach(restoreEnv);
 
   it("writes a valid number, clamped to bounds", () => {
+    // Arrange
     delete process.env.FETCH_CONNECT_TIMEOUT_MS;
+
+    // Act
     applyFetchTimeoutEnv({ fetchConnectTimeoutMs: 180000 });
+
+    // Assert
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBe("180000");
-    applyFetchTimeoutEnv({ fetchConnectTimeoutMs: 9999999 });
+
+    // Arrange
+    const overCeiling = { fetchConnectTimeoutMs: 9999999 };
+
+    // Act
+    applyFetchTimeoutEnv(overCeiling);
+
+    // Assert
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBe(String(FETCH_CONNECT_TIMEOUT_MAX_MS));
   });
 
   it("is a no-op for a missing or non-number key so .env survives", () => {
+    // Arrange
     process.env.FETCH_CONNECT_TIMEOUT_MS = "120000";
+
+    // Act
     applyFetchTimeoutEnv({});
+
+    // Assert
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBe("120000");
-    applyFetchTimeoutEnv({ fetchConnectTimeoutMs: "60000" });
+
+    // Arrange
+    const nonNumber = { fetchConnectTimeoutMs: "60000" };
+
+    // Act
+    applyFetchTimeoutEnv(nonNumber);
+
+    // Assert
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBe("120000");
-    applyFetchTimeoutEnv({ fetchConnectTimeoutMs: null });
+
+    // Arrange
+    const nullValue = { fetchConnectTimeoutMs: null };
+
+    // Act
+    applyFetchTimeoutEnv(nullValue);
+
+    // Assert
     expect(process.env.FETCH_CONNECT_TIMEOUT_MS).toBe("120000");
   });
 });
