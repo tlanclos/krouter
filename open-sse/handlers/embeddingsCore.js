@@ -1,5 +1,5 @@
 import { createErrorResult, parseUpstreamError, formatProviderError } from "../utils/error.js";
-import { HTTP_STATUS, FETCH_CONNECT_TIMEOUT_MS } from "../config/runtimeConfig.js";
+import { HTTP_STATUS, getFetchConnectTimeoutMs } from "../config/runtimeConfig.js";
 import { getExecutor } from "../executors/index.js";
 import { refreshWithRetry } from "../services/tokenRefresh.js";
 import { getEmbeddingAdapter } from "./embeddingProviders/index.js";
@@ -67,7 +67,7 @@ export async function handleEmbeddingsCore({
       // 0.5.129 (upstream fe547f4d) — bound the connect time so a dead self-hosted
       // endpoint fails fast instead of hanging the request.
       ...(typeof AbortSignal?.timeout === "function"
-        ? { signal: AbortSignal.timeout(FETCH_CONNECT_TIMEOUT_MS) }
+        ? { signal: AbortSignal.timeout(getFetchConnectTimeoutMs()) }
         : {}),
     });
   } catch (error) {

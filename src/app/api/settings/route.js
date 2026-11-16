@@ -4,6 +4,8 @@ import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
 import { resetComboRotation } from "open-sse/services/combo.js";
 import bcrypt from "bcryptjs";
 import { sanitizeModelTransports } from "open-sse/config/providerModels.js";
+import { applyFetchTimeoutEnv } from "@/lib/fetchTimeoutEnv";
+import { FETCH_CONNECT_TIMEOUT_MIN_MS, FETCH_CONNECT_TIMEOUT_MAX_MS } from "open-sse/config/runtimeConfig.js";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -54,6 +56,18 @@ export async function PATCH(request) {
         : {};
     }
 
+    // Upstream connect-timeout knob (Endpoint page). Boundary check: the value
+    // is written to env and read on every request, so reject rather than clamp.
+    if (Object.prototype.hasOwnProperty.call(body, "fetchConnectTimeoutMs")) {
+      const ms = Number(body.fetchConnectTimeoutMs);
+      if (!Number.isInteger(ms) || ms < FETCH_CONNECT_TIMEOUT_MIN_MS || ms > FETCH_CONNECT_TIMEOUT_MAX_MS) {
+        return NextResponse.json(
+          { error: `fetchConnectTimeoutMs must be an integer between ${FETCH_CONNECT_TIMEOUT_MIN_MS} and ${FETCH_CONNECT_TIMEOUT_MAX_MS} ms` },
+          { status: 400 }
+        );
+      }
+    }
+
     // If updating password, hash it
     if (body.newPassword) {
       const settings = await getSettings();
@@ -100,6 +114,12 @@ export async function PATCH(request) {
       Object.prototype.hasOwnProperty.call(body, "outboundNoProxy")
     ) {
       applyOutboundProxyEnv(settings);
+    }
+
+    // Apply the connect-timeout knob immediately (no restart) — same reasoning
+    // as the outbound-proxy block above.
+    if (Object.prototype.hasOwnProperty.call(body, "fetchConnectTimeoutMs")) {
+      applyFetchTimeoutEnv(settings);
     }
 
     // Invalidate combo rotation state when strategy settings change

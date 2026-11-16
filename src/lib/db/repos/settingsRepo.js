@@ -69,6 +69,10 @@ const DEFAULT_SETTINGS = {
   pxpipeModels: ["claude-fable-5", "claude-opus-4", "claude-sonnet-4", "claude-haiku-4"],
   responseCacheEnabled: false,
   responseCacheTtlSec: 300,
+  // Global upstream connect timeout (ms) for providers without their own
+  // timeoutMs. Endpoint-page knob; mirrored to env by src/lib/fetchTimeoutEnv.js
+  // because open-sse executors read env at request time, not the settings DB.
+  fetchConnectTimeoutMs: 60000,
   // 0.5.28 — emergency fallback redirect on 402 / budget exhaustion
   emergencyFallbackEnabled: false,
   emergencyFallbackProvider: "nvidia",

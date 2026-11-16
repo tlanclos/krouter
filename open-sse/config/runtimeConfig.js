@@ -53,6 +53,25 @@ export const SEARXNG_URL = (process.env.SEARXNG_URL || "http://localhost:8888/se
 // Fetch connect timeout: abort if upstream doesn't return response headers within this duration
 export const FETCH_CONNECT_TIMEOUT_MS = 60 * 1000;
 
+// Bounds for the dashboard's global connect-timeout knob (Endpoint page →
+// settings.fetchConnectTimeoutMs → env FETCH_CONNECT_TIMEOUT_MS). One source of
+// truth for both the API boundary check and the env fallback below.
+export const FETCH_CONNECT_TIMEOUT_MIN_MS = 10 * 1000;
+export const FETCH_CONNECT_TIMEOUT_MAX_MS = 600 * 1000;
+
+/**
+ * Resolve the connect timeout for the current request. Reads env at call time so
+ * a settings save (src/lib/fetchTimeoutEnv.js) takes effect without a restart —
+ * the const above is only the fallback when no knob has ever been set. Env may be
+ * hand-set (.env) before the dashboard knob has ever been saved, so clamp rather
+ * than trust it.
+ */
+export function getFetchConnectTimeoutMs() {
+  const raw = parseInt(process.env.FETCH_CONNECT_TIMEOUT_MS ?? "", 10);
+  if (!Number.isFinite(raw)) return FETCH_CONNECT_TIMEOUT_MS;
+  return Math.min(Math.max(raw, FETCH_CONNECT_TIMEOUT_MIN_MS), FETCH_CONNECT_TIMEOUT_MAX_MS);
+}
+
 // Default token limits
 export const DEFAULT_MAX_TOKENS = 64000;
 

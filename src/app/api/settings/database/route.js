@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { exportDb, getSettings, importDb } from "@/lib/localDb";
 import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
+import { applyFetchTimeoutEnv } from "@/lib/fetchTimeoutEnv";
 import { verifyDashboardPassword } from "@/lib/auth/dashboardSession";
 import { hasValidCliToken } from "@/lib/auth/cliToken";
 
@@ -32,6 +33,8 @@ export async function POST(request) {
     try {
       const settings = await getSettings();
       applyOutboundProxyEnv(settings);
+      // Imported settings replace config wholesale — re-apply the timeout knob too.
+      applyFetchTimeoutEnv(settings);
     } catch (err) {
       console.warn("[Settings][DatabaseImport] Failed to re-apply outbound proxy env:", err);
     }
