@@ -1,6 +1,11 @@
 import { getAdapter } from "../driver.js";
 import { parseJson, stringifyJson } from "../helpers/jsonCol.js";
 import { isDeadPoolModel } from "open-sse/services/capacityAdapter.js";
+import {
+  FETCH_CONNECT_TIMEOUT_DEFAULT_MS,
+  FETCH_CONNECT_TIMEOUT_MIN_MS,
+  FETCH_CONNECT_TIMEOUT_MAX_MS,
+} from "open-sse/config/runtimeConfig.js";
 
 const DEFAULT_MITM_ROUTER_BASE = "http://localhost:20128";
 
@@ -72,7 +77,7 @@ const DEFAULT_SETTINGS = {
   // Global upstream connect timeout (ms) for providers without their own
   // timeoutMs. Endpoint-page knob; read per request and passed down to the
   // provider call, like every other setting.
-  fetchConnectTimeoutMs: 60000,
+  fetchConnectTimeoutMs: FETCH_CONNECT_TIMEOUT_DEFAULT_MS,
   // 0.5.28 — emergency fallback redirect on 402 / budget exhaustion
   emergencyFallbackEnabled: false,
   emergencyFallbackProvider: "nvidia",
@@ -116,6 +121,17 @@ function mergeWithDefaults(raw) {
     }
   }
   merged.capacityAdapter = migrateCapacityAdapter(merged.capacityAdapter);
+  // The endpoint knob is a number the executors multiply into timers; a bad
+  // value (or a hand-edited settings row) is clamped to the supported range
+  // rather than trusted.
+  if (typeof merged.fetchConnectTimeoutMs !== "number" || !Number.isFinite(merged.fetchConnectTimeoutMs)) {
+    merged.fetchConnectTimeoutMs = FETCH_CONNECT_TIMEOUT_DEFAULT_MS;
+  } else {
+    merged.fetchConnectTimeoutMs = Math.min(
+      Math.max(merged.fetchConnectTimeoutMs, FETCH_CONNECT_TIMEOUT_MIN_MS),
+      FETCH_CONNECT_TIMEOUT_MAX_MS
+    );
+  }
   return merged;
 }
 
