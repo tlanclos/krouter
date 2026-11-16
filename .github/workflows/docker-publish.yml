@@ -8,7 +8,7 @@ on:
 
 env:
   GHCR_IMAGE: ghcr.io/${{ github.repository }}
-  DOCKERHUB_IMAGE: sifxprime/krouter
+  DOCKERHUB_IMAGE: ${{ github.actor }}/krouter
 
 jobs:
   build-and-push:
@@ -75,7 +75,7 @@ jobs:
             const src = fs.readFileSync("cli/README.md", "utf8");
             const out = src.replace(
               /^> \*\*You.re viewing this on npm\.\*\*.*$/m,
-              "> **You\u2019re viewing this on Docker Hub.** Full docs, screenshots, and changelog: [github.com/sifxprime/krouter](https://github.com/sifxprime/krouter)."
+              "> **You\u2019re viewing this on Docker Hub.** Full docs, screenshots, and changelog: [github.com/${{ github.actor }}/krouter](https://github.com/${{ github.actor }}/krouter)."
             );
             fs.writeFileSync("dockerhub-readme.md", out);
           '
