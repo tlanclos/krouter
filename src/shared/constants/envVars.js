@@ -33,7 +33,6 @@ export const ENV_VAR_CATALOG = [
   { name: "KROUTER_PROXY_URL", category: "network", desc: "Canonical proxy URL written by kRouter when the dashboard toggle is on", default: "(unset)", secret: false },
   { name: "KROUTER_PROXY_MANAGED", category: "network", desc: "Marker so kRouter only clears env it wrote itself", default: "(unset)", secret: false },
   { name: "KROUTER_NO_PROXY", category: "network", desc: "Canonical no-proxy list paired with KROUTER_PROXY_URL", default: "(unset)", secret: false },
-  { name: "FETCH_CONNECT_TIMEOUT_MS", category: "network", desc: "Milliseconds to wait for a provider to return response headers before aborting the attempt", default: "60000", secret: false },
 
   // --- MITM / Tunnel ---
   { name: "DEBUG_MITM", category: "mitm", desc: "Enable verbose MITM logging", default: "false", secret: false },

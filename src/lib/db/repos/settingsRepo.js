@@ -70,8 +70,9 @@ const DEFAULT_SETTINGS = {
   responseCacheEnabled: false,
   responseCacheTtlSec: 300,
   // Global upstream connect timeout (ms) for providers without their own
-  // timeoutMs. Endpoint-page knob; mirrored to env by src/lib/fetchTimeoutEnv.js
-  // because open-sse executors read env at request time, not the settings DB.
+  // timeoutMs. Endpoint-page knob; mirrored into the in-process store by
+  // src/lib/fetchTimeoutSetting.js because open-sse executors read it at
+  // request time, not the settings DB.
   fetchConnectTimeoutMs: 60000,
   // 0.5.28 — emergency fallback redirect on 402 / budget exhaustion
   emergencyFallbackEnabled: false,

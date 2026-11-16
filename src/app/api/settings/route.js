@@ -4,7 +4,7 @@ import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
 import { resetComboRotation } from "open-sse/services/combo.js";
 import bcrypt from "bcryptjs";
 import { sanitizeModelTransports } from "open-sse/config/providerModels.js";
-import { applyFetchTimeoutEnv } from "@/lib/fetchTimeoutEnv";
+import { applyFetchTimeoutSetting } from "@/lib/fetchTimeoutSetting";
 import { FETCH_CONNECT_TIMEOUT_MIN_MS, FETCH_CONNECT_TIMEOUT_MAX_MS } from "open-sse/config/runtimeConfig.js";
 
 export const dynamic = "force-dynamic";
@@ -119,7 +119,7 @@ export async function PATCH(request) {
     // Apply the connect-timeout knob immediately (no restart) — same reasoning
     // as the outbound-proxy block above.
     if (body.fetchConnectTimeoutMs !== undefined) {
-      applyFetchTimeoutEnv(settings);
+      applyFetchTimeoutSetting(settings);
     }
 
     // Invalidate combo rotation state when strategy settings change
