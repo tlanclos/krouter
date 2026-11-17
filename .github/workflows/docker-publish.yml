@@ -8,7 +8,6 @@ on:
 
 env:
   GHCR_IMAGE: ghcr.io/${{ github.repository }}
-  DOCKERHUB_IMAGE: ${{ github.actor }}/krouter
 
 jobs:
   build-and-push:
@@ -30,19 +29,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
-            ${{ env.DOCKERHUB_IMAGE }}
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest,enable={{is_default_branch}}
@@ -79,16 +71,6 @@ jobs:
             );
             fs.writeFileSync("dockerhub-readme.md", out);
           '
-
-      - name: Update Docker Hub description
-        continue-on-error: true
-        uses: peter-evans/dockerhub-description@v4
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ env.DOCKERHUB_IMAGE }}
-          short-description: "Self-hosted AI gateway for Claude Code, Cursor, Codex & Copilot. 40+ providers, one endpoint."
-          readme-filepath: ./dockerhub-readme.md
 
       # v0.5.158, v0.5.159 and v0.5.160 all failed here and nobody noticed for
       # weeks, because a tag-triggered workflow is one nobody is watching. An open
